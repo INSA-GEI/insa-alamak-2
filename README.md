@@ -1,2 +1,4 @@
-# insa-alamak-2
-Depot pour la competition NXPCup equipe 2
+# insa-alamak
+Repository for Insa NXP Cup Team 2
+
+Stable branche
