@@ -10,13 +10,19 @@
 
 #define STRAIGHT					1
 #define CURVE						2
+#define CROSS						0
+#define UNDEFINE_CASE				5
+#define	ENDLINE						6
+#define MAX_DETECTION				20
+#define MIN_DETECTION				0
+#define	DETECTION_TRIGGER			10
 
-void update_corrector_type(int MODE);
+void update_corrector_type(int number_detection);
 
 /*ADD 3 variables in MAIN:
 int *nbr_detection_straight;
 int *nbr_detection_curve;
-int *type_detection
+int *type_detection;
 
 in the init add this code:
 *nbr_detection_straight=100;

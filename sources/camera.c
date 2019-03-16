@@ -137,9 +137,9 @@ float gaussian2;
 	 	  		}
 			}
 			
-			GPIOB_PDOR |= GPIO_PDOR_PDO(1<<18);   // red LED off
+			/*GPIOB_PDOR |= GPIO_PDOR_PDO(1<<18);   // red LED off
 			GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
-			GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);   // blue LED on		
+			GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);   // blue LED on	*/	
 			
 		}	/* END of "(IF mfunctionning_mod == 1)" */
 	
@@ -269,9 +269,9 @@ float gaussian2;
 	   			}		/* END else if ... */
 	   		}	/* END for (i=64;i>=1;i--) */
 
-			GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
+			/*GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
 			GPIOD_PDOR |= GPIO_PDOR_PDO(1<<1);    // blue LED off	
-			GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<18);	// red led on
+			GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<18);	// red led on*/
 			
 		}	/* END of "(IF mfunctionning_mod == 2 || functionning_mode == 3)" */
 
@@ -395,9 +395,9 @@ float gaussian2;
 	   		}	/* END for (i=64;i>=1;i--) */
 
 			
-			GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
+			/*GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
 			GPIOB_PDOR |= GPIO_PDOR_PDO(1<<18);   // red LED off
-			GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);   // blue LED on	
+			GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);   // blue LED on	*/
 			
 			
 		} /* END of "if (functionning_mode == 4)"  */
