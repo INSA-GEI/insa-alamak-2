@@ -27,14 +27,12 @@
 #include "math.h"	/* used for different calculations, including the difference of Gaussian with roots, exponential and PI */
 #include "stdio.h"
 #include "stdlib.h"
-//#include "detection.h"
 
 
 // Variable declaration
 int i, j;									// counters for loops
 int ImageData [128];						// array to store the LineScan image
 int ImageDataDifference [128];				// array to store the PineScan pixel difference
-
 
 int CompareData_classic;					// set data for comparison to find max IN BASE ALGORITHM
 int CompareData_low;						// set data for comparison to find max with low threshold
@@ -43,6 +41,8 @@ int validate_gradient;						// used in image processing to validate some paramet
 	
 float gaussian1;								// gaussian filters used in gaussian differences method
 float gaussian2;
+
+int ckbk; 
 
 /*  variables from pointers (main) used in this file   */ 
 // diff -> int			 actual difference from line middle position
@@ -63,414 +63,151 @@ float gaussian2;
 
 */
 
-	void fill_ImageDataDifference(void)
-	{
-		if (functionning_mode == 1)
-		{
-			for(i=0;i<=126;i++)							// classic algorithm (same as the NXP_minimal) 
-			{
-				ImageDataDifference[i] = abs (ImageData[i] - ImageData[i+1]);
-			}
-			ImageDataDifference[127] = ImageData[127];	// last value doesnt have "gradient" for this method
-		}
-		else if (functionning_mode == 2)
-		{
-			for(i=1;i<=126;i++)							// using a gradient by direct differences (application of the filter : [-1 , 0 , 1] -> P(x) = -1*P(x-1)+0*P(x)+1*P(x+1))
-			{
-				ImageDataDifference[i] = abs (-ImageData[i-1] + ImageData[i+1]);
-			}
-			ImageDataDifference[0] = ImageData[0];	// first value doesnt have "gradient" for this method
-			ImageDataDifference[127] = ImageData[127];	// last value doesnt have "gradient" for this method
-		}
-		else if (functionning_mode == 3)
-		{
-			for(i=1;i<=126;i++)							// using a gradient by centered differences (application of the filter :[-1/2 , 0 , 1/2] -> P(x) = (-1/2)*P(x-1)+0*P(x)+(1/2)*P(x+1))
-			{
-				ImageDataDifference[i] = abs (-(ImageData[i-1])/2 + (ImageData[i+1])/2);
-			}
-			ImageDataDifference[0] = ImageData[0];	// first value doesnt have "gradient" for this method
-			ImageDataDifference[127] = ImageData[127];	// last value doesnt have "gradient" for this method
-		}
-		else if (functionning_mode == 4)
-		{
-			for(i=0;i<=127;i++)							// using the Gaussian difference method
-			{
-				gaussian1 = (1/(SIGMA_1 * sqrt(2*PI))) * exp(-(pow(i,2))/(2*pow(SIGMA_1,2)));
-				gaussian2 = (1/(SIGMA_2 * sqrt(2*PI))) * exp(-(pow(i,2))/(2*pow(SIGMA_2,2)));
+void switchLed(int red, int green, int blue) {
+	GPIOB_PDOR |= GPIO_PDOR_PDO(1<<18);   // red LED off
+	GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
+	GPIOD_PDOR |= GPIO_PDOR_PDO(1<<1);    // blue LED off
+	if(red == 1) {
+		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<18);  // red LED on
+	}
+	if (green == 1) {
+		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<19);  // green LED on
+	}	
+	if (blue == 1) {
+		GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);   // blue LED on
+	}
+}
 
-				ImageDataDifference[i] = abs ( (int) (round ( (ImageData[i] * gaussian1 - ImageData[i] * gaussian2) ) ) );
-			}
-
-		}
-	}	/*	End of function "Fill_ImageDataDifference"	*/
-
-
-	void image_processing (int * diff, int * diff_old, int * BlackLineLeft, int * BlackLineRight, int * RoadMiddle, int* number_edges)
-	{
-		*number_edges = 0;		// reset the number of peaks to 0
-		
-		if (functionning_mode == 1)
-		{
-			// Find black line on the right side
-			CompareData_classic = THRESHOLD_classic;					// threshold
-			*BlackLineRight = 126;
-			for(i=64;i<=125;i++)
-			{
-	   			if (ImageDataDifference[i] > CompareData_classic)
-	   			{
-	   				CompareData_classic = ImageDataDifference[i];
-	   				*BlackLineRight = i;
-	   				*number_edges++;
-	   			}
-			}
-	
-			// Find black line on the left side
-			CompareData_classic = THRESHOLD_classic;					// threshold
-			*BlackLineLeft = 1;
-			for(i=64;i>=3;i--)							// only down to pixel 3, not 1
-			{
-			   	if (ImageDataDifference[i] > CompareData_classic)
-	 		  	{
-	 	 	 		CompareData_classic = ImageDataDifference[i];
-	 		  		*BlackLineLeft = i;
-	 		  		*number_edges++;
-	 	  		}
-			}
-			
-			/*GPIOB_PDOR |= GPIO_PDOR_PDO(1<<18);   // red LED off
-			GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
-			GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);   // blue LED on	*/	
-			
-		}	/* END of "(IF mfunctionning_mod == 1)" */
-	
-/****************************************************************************************************************************************************
-
-		Mode number 2 or 3 : same type of operation (gradient differences)
-		mode 2 : using a gradient by direct differences (application of the filter : [-1 , 0 , 1] -> P(x) = -1*P(x-1)+0*P(x)+1*P(x+1))
-		mode 3 : using a gradient by centered differences (application of the filter :[-1/2 , 0 , 1/2] -> P(x) = (-1/2)*P(x-1)+0*P(x)+(1/2)*P(x+1))
-			
-*****************************************************************************************************************************************************/
-
-		else if (functionning_mode == 2 || functionning_mode == 3)	
-		{
-			// Find black line on the right side
-
-			CompareData_low = THRESHOLD_low;					// threshold_low
-			CompareData_high = THRESHOLD_high;					// threshold_high
-
-			*BlackLineRight = 126;
-			for(i=126;i>=64;i--)
-			{
-	   			if (ImageDataDifference[i] > CompareData_high)
-	   			{
-	   				//CompareData_high = ImageDataDifference[i];
-	   				*BlackLineRight = i;
-	   				*number_edges ++;
-	   			}
-	   			else if (ImageDataDifference[i] > CompareData_low && ImageDataDifference[i] < CompareData_high )
-	   			{
-	   				if (i >= 67 && i < 124)
-	   				{
-	   					j = 1;
-	   					validate_gradient = 0;
-						while (j <= 3)
-	   					{
-	   						if (ImageDataDifference[i+j] > CompareData_high || ImageDataDifference[i-j] > CompareData_high)
-	   						{
-	   							*BlackLineRight = i;
-	   							*number_edges ++;
-	   							//CompareData_high = ImageDataDifference[i+j];	
-	   							validate_gradient = 1;	
-	   							
-	   						}
-	   						j++;
-	   					}
-	   				}
-
-	   				if (validate_gradient != 1)
-	   				{
-	   					if (i >= 69 && i < 122)
-	   					{
-	   						j=1;
-	   						while (j <= 5)
-	   						{
-	   							if ((ImageDataDifference[i+j] > CompareData_low && ImageDataDifference[i+j] < CompareData_high) || (ImageDataDifference[i-j] > CompareData_low && ImageDataDifference[i-j] < CompareData_high))
-	   							{
-	   								*BlackLineRight = i;
-	   								*number_edges ++;
-	   								//CompareData_low = ImageDataDifference[i];	 
-	   							}
-	   							j++;
-
-	   						}
-
-	   					}
-	   				
-	   				}
-	   			}		/* END else if ... */
-			}	/* END for (i=126;i>=64;i--) */
-
-
-	   		// Find black line on the left side
-
-			CompareData_low = THRESHOLD_low;					// threshold_low
-			CompareData_high = THRESHOLD_high;					// threshold_high
-
-			// image processing with the algorithm seen at the beginning. 
-			*BlackLineLeft = 1;
-			for(i=1;i<=64;i++)
-			{
-	   			if (ImageDataDifference[i] > CompareData_high)
-	   			{
-	   				//CompareData_high = ImageDataDifference[i];
-	   				*BlackLineLeft = i;
-	   				*number_edges ++;
-	   			}
-	   			else if (ImageDataDifference[i] > CompareData_low && ImageDataDifference[i] < CompareData_high )
-	   			{
-	   				if (i > 3 && i <= 61)
-	   				{
-	   					j = 1;
-	   					validate_gradient = 0;
-						while (j <= 3)
-	   					{
-	   						if (ImageDataDifference[i+j] > CompareData_high || ImageDataDifference[i-j] > CompareData_high)
-	   						{
-	   							*BlackLineLeft = i;
-	   							*number_edges ++;
-	   							//CompareData_high = ImageDataDifference[i+j];
-	   							//CompareData_low = ImageDataDifference[i];	   		
-	   							validate_gradient = 1;				
-	   						}
-	   						j++;
-	   					}
-	   				}
-
-	   				if (validate_gradient != 1)
-	   				{
-	   					if (i > 5 && i <= 59)
-	   					{
-	   						j=1;
-	   						while (j <= 5)
-	   						{
-	   							if ((ImageDataDifference[i+j] > CompareData_low && ImageDataDifference[i+j] < CompareData_high) || (ImageDataDifference[i-j] > CompareData_low && ImageDataDifference[i-j] < CompareData_high))
-	   							{
-	   								*BlackLineLeft = i;
-	   								*number_edges ++;
-	   								//CompareData_high = ImageDataDifference[i+j];
-	   								//CompareData_low = ImageDataDifference[i];	 
-	   							}
-	   							j++;
-	   						}
-
-	   					}
-	   				
-	   				}
-	   			}		/* END else if ... */
-	   		}	/* END for (i=64;i>=1;i--) */
-
-			/*GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
-			GPIOD_PDOR |= GPIO_PDOR_PDO(1<<1);    // blue LED off	
-			GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<18);	// red led on*/
-			
-		}	/* END of "(IF mfunctionning_mod == 2 || functionning_mode == 3)" */
-
-
-/****************************************************************************************************************************************************
-
-		Mode number 4 : about the same as mode 2 and 3, but the calculation is made on two additional indices (0 and 127)
-		mode 4 : using the Gaussian difference method
-			
-*****************************************************************************************************************************************************/
-
-		else if (functionning_mode == 4)
-		{
-			// Find black line on the right side
-
-			CompareData_low = THRESHOLD_low;					// threshold_low
-			CompareData_high = THRESHOLD_high;					// threshold_high
-
-			*BlackLineRight = 126;
-			for(i=127;i>=64;i--)
-			{
-	   			if (ImageDataDifference[i] > CompareData_high)
-	   			{
-	   				//CompareData_high = ImageDataDifference[i];
-	   				*BlackLineRight = i;
-	   			}
-	   			else if (ImageDataDifference[i] > CompareData_low && ImageDataDifference[i] < CompareData_high )
-	   			{
-	   				if (i >= 67 && i <= 124)
-	   				{
-	   					j = 1;
-	   					validate_gradient = 0;
-						while (j <= 3)
-	   					{
-	   						if (ImageDataDifference[i+j] > CompareData_high || ImageDataDifference[i-j] > CompareData_high)
-	   						{
-	   							*BlackLineRight = i;
-	   							//CompareData_high = ImageDataDifference[i+j];	
-	   							validate_gradient = 1;				
-	   						}
-	   						j++;
-	   					}
-	   				}
-
-	   				if (validate_gradient != 1)
-	   				{
-	   					if (i >= 69 && i <= 122)
-	   					{
-	   						j=1;
-	   						while (j <= 5)
-	   						{
-	   							if ((ImageDataDifference[i+j] > CompareData_low && ImageDataDifference[i+j] < CompareData_high) || (ImageDataDifference[i-j] > CompareData_low && ImageDataDifference[i-j] < CompareData_high))
-	   							{
-	   								*BlackLineRight = i;
-	   								//CompareData_low = ImageDataDifference[i];	 
-	   							}
-	   							j++;
-
-	   						}
-
-	   					}
-	   				
-	   				}
-	   			}		/* END else if ... */
-			}	/* END for (i=126;i>=64;i--) */
-
-
-	   		// Find black line on the left side
-
-			CompareData_low = THRESHOLD_low;					// threshold_low
-			CompareData_high = THRESHOLD_high;					// threshold_high
-
-			// image processing with the algorithm seen at the beginning. 
-			*BlackLineLeft = 1;
-			for(i=0;i<=64;i++)
-			{
-	   			if (ImageDataDifference[i] > CompareData_high)
-	   			{
-	   				//CompareData_high = ImageDataDifference[i];
-	   				*BlackLineLeft = i;
-	   			}
-	   			else if (ImageDataDifference[i] > CompareData_low && ImageDataDifference[i] < CompareData_high )
-	   			{
-	   				if (i >= 3 && i <= 61)
-	   				{
-	   					j = 1;
-	   					validate_gradient = 0;
-						while (j <= 3)
-	   					{
-	   						if (ImageDataDifference[i+j] > CompareData_high || ImageDataDifference[i-j] > CompareData_high)
-	   						{
-	   							*BlackLineLeft = i;
-	   							//CompareData_high = ImageDataDifference[i+j];
-	   							//CompareData_low = ImageDataDifference[i];	   		
-	   							validate_gradient = 1;				
-	   						}
-	   						j++;
-	   					}
-	   				}
-
-	   				if (validate_gradient != 1)
-	   				{
-	   					if (i >= 5 && i <= 59)
-	   					{
-	   						j=1;
-	   						while (j <= 5)
-	   						{
-	   							if ((ImageDataDifference[i+j] > CompareData_low && ImageDataDifference[i+j] < CompareData_high) || (ImageDataDifference[i-j] > CompareData_low && ImageDataDifference[i-j] < CompareData_high))
-	   							{
-	   								*BlackLineLeft = i;
-	   								//CompareData_high = ImageDataDifference[i+j];
-	   								//CompareData_low = ImageDataDifference[i];	 
-	   							}
-	   							j++;
-	   						}
-
-	   					}
-	   				
-	   				}
-	   			}		/* END else if ... */
-	   		}	/* END for (i=64;i>=1;i--) */
-
-			
-			/*GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
-			GPIOB_PDOR |= GPIO_PDOR_PDO(1<<18);   // red LED off
-			GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);   // blue LED on	*/
-			
-			
-		} /* END of "if (functionning_mode == 4)"  */
-			
-	}	/*	END of the function "Image_Processing"	*/
-
-
-
-/*void plot_ImageData (void)
+void fill_ImageDataDifference(void)
 {
-	for (i=0;i<=127;i++)
+	if (functionning_mode == 1)
 	{
-		if (i==0)
+		for(i=0;i<=126;i++)							// classic algorithm (same as the NXP_minimal) 
 		{
-			printf("ImageData (0 to 127) : %d ",ImageData[i]);
+			ImageDataDifference[i] = abs (ImageData[i] - ImageData[i+1]);
 		}
-		else if (i == 127)
+		ImageDataDifference[127] = ImageData[127];	// last value doesnt have "gradient" for this method
+	}
+	else if (functionning_mode == 2)
+	{
+		for(i=1;i<=126;i++)							// using a gradient by direct differences (application of the filter : [-1 , 0 , 1] -> P(x) = -1*P(x-1)+0*P(x)+1*P(x+1))
 		{
-			printf("%d \n", ImageData[i]);
+			ImageDataDifference[i] = abs (-ImageData[i-1] + ImageData[i+1]);
 		}
-		else 
+		ImageDataDifference[0] = ImageData[0];	// first value doesnt have "gradient" for this method
+		ImageDataDifference[127] = ImageData[127];	// last value doesnt have "gradient" for this method
+	}
+	else if (functionning_mode == 3)
+	{
+		for(i=1;i<=126;i++)							// using a gradient by centered differences (application of the filter :[-1/2 , 0 , 1/2] -> P(x) = (-1/2)*P(x-1)+0*P(x)+(1/2)*P(x+1))
 		{
-			printf("%d ",ImageData[i]);
+			ImageDataDifference[i] = abs (-(ImageData[i-1])/2 + (ImageData[i+1])/2);
+		}
+		ImageDataDifference[0] = ImageData[0];	// first value doesnt have "gradient" for this method
+		ImageDataDifference[127] = ImageData[127];	// last value doesnt have "gradient" for this method
+	}
+	else if (functionning_mode == 4)
+	{
+		for(i=0;i<=127;i++)							// using the Gaussian difference method
+		{
+			gaussian1 = (1/(SIGMA_1 * sqrt(2*PI))) * exp(-(pow(i,2))/(2*pow(SIGMA_1,2)));
+			gaussian2 = (1/(SIGMA_2 * sqrt(2*PI))) * exp(-(pow(i,2))/(2*pow(SIGMA_2,2)));
+
+			ImageDataDifference[i] = abs ( (int) (round ( (ImageData[i] * gaussian1 - ImageData[i] * gaussian2) ) ) );
+		}
+
+	}
+}	/*	End of function "Fill_ImageDataDifference"	*/
+
+
+/* line_list array of 10 peaks */
+void image_processing (int *diff, int * diff_old, int * BlackLineLeft, int * BlackLineRight, int * RoadMiddle, int* number_edges, int * OldLineLeft, int * OldLineRight)
+{
+	
+	/* sum default inits*/
+	*BlackLineLeft = 0;
+	*BlackLineRight = 128;
+	*diff_old = *diff;
+	
+	/* create peak (containing local maxima that passes certain threshold) array and initialise zhem all 0*/
+	*number_edges = 0;
+	int peak[10];
+	for (i = 0; i < 10; ++i) {
+		peak[i] = 0;
+	}
+	
+	/* determine the local maxima, bound by 3 and put them into the peak if they surpasses threshold */
+	int found = 0;
+	while (i < 124) {
+		// reinit found = 0 for next run to find the local maxima
+		found = 0;
+		// iterate through local bound to find maxima
+		for (j = 1; j < 4; ++j) {
+			if (ImageDataDifference[i-j] < ImageDataDifference[i] && ImageDataDifference[i+j] < ImageDataDifference[i]) {
+				found = 1;
+			}else {
+				found = 0;
+				break;
+			}
+		}
+		/* if at this stage found = 1, it means the point is the local maxima
+		 * which means we should check if it passes the threshold
+		 */
+		if (found == 1 && ImageDataDifference[i] > THRESHOLD_classic) {
+			peak[(*number_edges)++] = i;
+			i = i + 8;
+		}else {
+			i++;
 		}
 	}
-}	*/
-
-
-/*	END of function "plot_ImageData"	*/
-
-
-/*void plot_ImageDataDifference (void)
-{
-	for (i=0;i<=127;i++)
-	{
-		if (i==0)
-		{
-			printf("ImageDataDifference (0 to 127) : %d ",ImageDataDifference[i]);
+	
+	/* then depending on how many edges we detect, let's do sum shit */
+	if (*number_edges == 0) { /* can't see s*** => just assume a straight line*/
+		*BlackLineLeft = *OldLineLeft;
+		*BlackLineRight = *OldLineRight;
+		//switchLed(1,0,0); // red
+	}else if (*number_edges == 1) { /* see one line, probably a turn to make */
+		int diff_left = peak[0] - *OldLineLeft; 
+		int diff_right = peak[0] - *OldLineRight; 
+		if (peak[0] < 64 && abs(diff_left) < 20) {
+			*BlackLineLeft = peak[0];
+			*BlackLineRight = *BlackLineLeft + 80;
+			//switchLed(0,1,0); // green
+		}else if (peak[0] >= 64 && abs(diff_right) < 20) {
+			*BlackLineRight = peak[0];
+			*BlackLineLeft = *BlackLineRight - 80;
+			//switchLed(0,1,0); // green
+		}else if (abs(diff_left) < 30) {
+			*BlackLineLeft = peak[0];
+			*BlackLineRight = *BlackLineLeft + 80;
+			//switchLed(0,0,1); // blue
+		}else if (abs(diff_right) < 30) {
+			*BlackLineRight = peak[0];
+			*BlackLineLeft = *BlackLineRight - 80;
+			//switchLed(0,0,1); // blue
 		}
-		else if (i == 127)
-		{
-			printf("%d \n", ImageDataDifference[i]);
+	}else if (*number_edges == 2) { /* the first one is the left line and the second one is the right line */
+		if (peak[0] < 64 && peak[1] >= 64) { /* make sure that s*** doesn't diverge */
+			*BlackLineLeft = peak[0];
+			*BlackLineRight = peak[1];
+			//switchLed(1,1,1); // white
+		}else { /* probably some errors*/
+			*BlackLineLeft = *OldLineLeft;
+			*BlackLineRight = *OldLineRight;
+			//switchLed(0,0,0); // nothing
 		}
-		else 
-		{
-			printf("%d ",ImageDataDifference[i]);
-		}
+	}else if (*number_edges > 2) { /* for now we don't know yet what to do */
+		*BlackLineLeft = *OldLineLeft;
+		*BlackLineRight = *OldLineRight;
+		//switchLed(0,0,0); // nothing
 	}
-}	*/
-
-/*	END of function "plot_ImageDataDifference"	*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	
+	/* update the condition of the last detected lines */
+	*OldLineLeft = *BlackLineLeft;
+	*OldLineRight = *BlackLineRight;
+	
+	*diff = (*BlackLineRight + *BlackLineLeft)/2 - 64; 	
+}	/*	END of the function "Image_Processing"	*/
 
 
 // Capture LineScan Image

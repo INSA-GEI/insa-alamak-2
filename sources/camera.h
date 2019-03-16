@@ -25,10 +25,10 @@
 
 
 // Define thresholds for Camera Black Line recognition
-#define THRESHOLD_high				140			// Higher threshold : does not capture noise but may not capture all maximums.
-#define THRESHOLD_low				50			// Lower threshold : May capture more maximums than High threshold but can capture noise too.
+#define THRESHOLD_high				160			// Higher threshold : does not capture noise but may not capture all maximums.
+#define THRESHOLD_low				80			// Lower threshold : May capture more maximums than High threshold but can capture noise too.
 
-#define THRESHOLD_classic			120			// standard threshold : used in the basic image processing function
+#define THRESHOLD_classic			140			// standard threshold : used in the basic image processing function
 
 #define functionning_mode			2			// operating mode: from 1 to 3: algorithm more and more precise but heavy
 
@@ -36,9 +36,6 @@
 #define SIGMA_2 					2.5			// square root of the variance for the second gaussian filter. 
 
 #define PI							3.14159265358979323846	// value of PI
-
-
-
 
 void ImageCapture(void); // capture linescan image
 /*
@@ -80,8 +77,10 @@ void plot_ImageDataDifference (void);
 *
 */
 
+void switchLed(int red, int green, int blue);
 
-void image_processing (int * diff, int * diff_old, int * BlackLineLeft, int * BlackLineRight, int * RoadMiddle, int * number_edges);
+
+void image_processing (int *diff, int * diff_old, int * BlackLineLeft, int * BlackLineRight, int * RoadMiddle, int * number_edges, int * OldLineLeft, int * OldLineRight);
 /*
 *	Retrieves the image, applies algorithms to find local maximums and thus define the position of black lines. 
 *	PARAMETERS : operating mode : 1 = classic algorithm (same as the NXP_minimal) 

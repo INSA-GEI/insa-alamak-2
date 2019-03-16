@@ -20,10 +20,11 @@
 
 
 #include "movement.h"
-//#include "detection.h"
 
 
 int i = 0;				// index for counters
+
+
 
 
 
@@ -54,10 +55,9 @@ void middlecalculate (int * RoadMiddle, int * RoadMiddle_old, int * BlackLineLef
 		*RoadMiddle = *BlackLineLeft + 50;
 	}
 	// if no line on left and right side
-	if (number_edges == 0)
+	if (*number_edges == 0)
 	{
 		*RoadMiddle = *RoadMiddle_old;
-		for (i = 0 ; i < 1000000 ; i++);
 	}
 	if ((*BlackLineRight > 124) && (*BlackLineLeft < 3))
 	{

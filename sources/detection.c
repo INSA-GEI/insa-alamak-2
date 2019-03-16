@@ -17,10 +17,10 @@ int nbr_detection_undefine=MIN_DETECTION;
 int nbr_detection_cross=MIN_DETECTION;
 int type_detection=STRAIGHT;
 
-void update_corrector_type(int number_detection)
+void update_corrector_type(int *number_detection)
 {
 	
-	if (number_detection == CROSS)
+	if (*number_detection == CROSS)
 	{
 		if (nbr_detection_cross<MAX_DETECTION)
 		{
@@ -39,7 +39,7 @@ void update_corrector_type(int number_detection)
 			nbr_detection_endline-=1;
 		}
 	}
-	if (number_detection==STRAIGHT)
+	else if (*number_detection==STRAIGHT)
 	{
 		if (nbr_detection_straight<MAX_DETECTION)
 		{
@@ -59,7 +59,7 @@ void update_corrector_type(int number_detection)
 		}
 	}
 	
-	else if (number_detection==CURVE)
+	else if (*number_detection==CURVE)
 	{
 		if (nbr_detection_curve<MAX_DETECTION)
 		{
@@ -79,7 +79,7 @@ void update_corrector_type(int number_detection)
 		}
 	}
 	
-	else if (number_detection >= ENDLINE && number_detection <= UNDEFINE_CASE)
+	else if (*number_detection >= ENDLINE)
 	{
 		if (nbr_detection_endline<MAX_DETECTION)
 		{
@@ -102,32 +102,36 @@ void update_corrector_type(int number_detection)
 	
 	
 	
-	if (nbr_detection_straight>DETECTION_TRIGGER)
+	if (nbr_detection_straight>DETECTION_TRIGGER || (nbr_detection_straight>(DETECTION_TRIGGER/4) && type_detection==CURVE))
 	{
+		if (type_detection == CURVE)
+		{
+		nbr_detection_curve=0;
+		}
 		type_detection=STRAIGHT;
-		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<19);   // green LED off
-		GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);    // blue LED off	
+		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<19);   // green LED on
+		GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);    // blue LED on	
 		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<18);	// red led on
 	}
-	if (nbr_detection_curve>DETECTION_TRIGGER)
+	else if (nbr_detection_curve>DETECTION_TRIGGER)
 	{
 		type_detection=CURVE;
 		GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
 		GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);    // blue LED on	
 		GPIOB_PDOR |= GPIO_PDOR_PDO(1<<18);	// red led off
 	}
-	if (nbr_detection_endline>DETECTION_TRIGGER)
+	else if (nbr_detection_endline>(DETECTION_TRIGGER/2) || (nbr_detection_cross>DETECTION_TRIGGER && type_detection==CURVE))
 	{
 		type_detection=ENDLINE;
 		GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
-		GPIOD_PDOR |= GPIO_PDOR_PDO(1<<1);    // blue LED on	
-		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<18);	// red led off
+		GPIOD_PDOR |= GPIO_PDOR_PDO(1<<1);    // blue LED off	
+		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<18);	// red led on
 	}
-	if (nbr_detection_cross > DETECTION_TRIGGER && type_detection == STRAIGHT)
+	else if (nbr_detection_cross > DETECTION_TRIGGER && type_detection == STRAIGHT )//|| (nbr_detection_cross > DETECTION_TRIGGER/2 && type_detection == CURVE))
 	{
 		type_detection=CROSS;
-		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<19);   // green LED off
-		GPIOD_PDOR |= GPIO_PDOR_PDO(1<<1);    // blue LED on	
+		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<19);   // green LED on
+		GPIOD_PDOR |= GPIO_PDOR_PDO(1<<1);    // blue LED off	
 		GPIOB_PDOR |= GPIO_PDOR_PDO(1<<18);	// red led off
 		
 	}

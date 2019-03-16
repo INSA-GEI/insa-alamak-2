@@ -8,16 +8,16 @@
 #ifndef DETECTION_H_
 #define DETECTION_H_
 
-#define STRAIGHT					1
-#define CURVE						2
+#define STRAIGHT					2
+#define CURVE						1
 #define CROSS						0
-#define UNDEFINE_CASE				5
-#define	ENDLINE						6
-#define MAX_DETECTION				20
+#define UNDEFINE_CASE				6
+#define	ENDLINE						4
+#define MAX_DETECTION				30
 #define MIN_DETECTION				0
-#define	DETECTION_TRIGGER			10
+#define	DETECTION_TRIGGER			25
 
-void update_corrector_type(int number_detection);
+void update_corrector_type(int *number_detection);
 
 /*ADD 3 variables in MAIN:
 int *nbr_detection_straight;

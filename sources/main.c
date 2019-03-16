@@ -23,11 +23,11 @@
 #include "detection.h"
 
 // Defines for Direction PD Servo Control Loop
-#define KP						30			// Proportional coefficient
-#define KDP						10			// Differential coefficient
-#define KP_CURVE				60
-#define KDP_CURVE				20
-#define KP_CROSS				20
+#define KP						15			// Proportional coefficient
+#define KDP						5			// Differential coefficient
+#define KP_CURVE				50
+#define KDP_CURVE				35
+#define KP_CROSS				10
 #define KDP_CROSS				5
 #define KI						0
 
@@ -61,7 +61,7 @@ int RoadMiddle = 0;					// used in "camera.c"					// calculated middle of the ro
 int RoadMiddle_old = 0;				// used in "movement.c"					// save the last "Middle of the road" position
 
 
-int servo_base = 7200;														// initial servo position (center)
+int servo_base = 7100;														// initial servo position (center)
 unsigned long count_time = 0;												// counter to regulate the display of data 
 
 int BlackLineRight = 127;			// used in "camera.c"					// position of the black line on the right side
@@ -69,6 +69,9 @@ int BlackLineLeft = 0;				// used in "camera.c"					// position of the black lin
 int number_edges = 0;				// used in "camera.c"					// number of edges found per line
 int sum_error=0;
 int endLine=0;
+int number_peak = 0;
+int OldLineRight = 0;
+int OldLineLeft = 0;
 
 // Main program
 int main(void){
@@ -219,12 +222,13 @@ void FTM1_IRQHandler()				// TPM1 ISR
 	ImageCapture();								// capture LineScan image
 	
 	fill_ImageDataDifference ();			// fill the table "ImageDataDifference" with specified method (1/2/3/4) (see "Camera.h")
-	image_processing(&diff, &diff_old, &BlackLineLeft, &BlackLineRight, &RoadMiddle, &number_edges);	// image processing : finds the black lines on the left and right, and finds the middle of the track
+	image_processing(&diff, &diff_old, &BlackLineLeft, &BlackLineRight, &RoadMiddle, &number_edges, &OldLineLeft, &OldLineRight);	// image processing : finds the black lines on the left and right, and finds the middle of the track
 	
 	middlecalculate(&RoadMiddle, &RoadMiddle_old, &BlackLineLeft, &BlackLineRight, &diff, &diff_old, &number_edges);	// calculate the middle of the road
 	// Direction Control Loop: PD Controller
 	
-	update_corrector_type(number_edges);
+	//printf("number edges = %d", number_edges);
+	update_corrector_type(&number_edges);
 	
 	
 	
@@ -241,34 +245,35 @@ void FTM1_IRQHandler()				// TPM1 ISR
 			else 
 		if (endLine==1){*/
 			TPM0_C1V = 0;					// TPM0 channel1 left Motor 1 In 1 fast forward
-			TPM0_C5V = 0;					// TPM0 channel5 right Motor 2 In 2 fast forward		
+			TPM0_C5V = 0;
+			exit(1);// TPM0 channel5 right Motor 2 In 2 fast forward		
 		//}
 	}
 	else if (type_detection==CURVE)
 	{
 		servo_position = KP_CURVE*diff + KDP_CURVE*(diff-diff_old);
-		if (BlackLineRight >= 70 && BlackLineLeft <= 10 && endLine==0) 	// Left turn case
+		if (BlackLineRight <= 92 && BlackLineLeft >= 12 && endLine==0) 	// Left turn case
 		{
-			TPM0_C1V = 20;					// TPM0 channel1 left Motor 1 In 1 slow forward
-			TPM0_C5V = 50;					// TPM0 channel5 right Motor 2 In 2 slow forward
+			TPM0_C1V = 30;					// TPM0 channel1 left Motor 1 In 1 slow forward
+			TPM0_C5V = 100;					// TPM0 channel5 right Motor 2 In 2 slow forward
 		}
-		else if (BlackLineRight >= 120 && BlackLineLeft >= 35 && endLine==0)	// right turn case
+		else if (BlackLineRight <= 105 && BlackLineLeft >= 25 && endLine==0)	// right turn case
 		{
-			TPM0_C1V = 50;					// TPM0 channel1 left Motor 1 In 1 slow forward
-			TPM0_C5V = 20;					// TPM0 channel5 right Motor 2 In 2 slow forward
+			TPM0_C1V = 100;					// TPM0 channel1 left Motor 1 In 1 slow forward
+			TPM0_C5V = 30;					// TPM0 channel5 right Motor 2 In 2 slow forward
 		}
 	}
 	else if(type_detection==STRAIGHT)
 	{
 		servo_position = KP*diff + KDP*(diff-diff_old);
-		TPM0_C1V = 100;					// TPM0 channel1 left Motor 1 In 1 fast forward
-		TPM0_C5V = 100;					// TPM0 channel5 right Motor 2 In 2 fast forward
+		TPM0_C1V = 120;					// TPM0 channel1 left Motor 1 In 1 fast forward
+		TPM0_C5V = 120;					// TPM0 channel5 right Motor 2 In 2 fast forward
 	}
 	else if (type_detection == CROSS)
 	{
 		servo_position = KP_CROSS*diff + KDP_CROSS*(diff-diff_old);
-		TPM0_C1V = 100;					// TPM0 channel1 left Motor 1 In 1 fast forward
-		TPM0_C5V = 100;	
+		TPM0_C1V = 120;					// TPM0 channel1 left Motor 1 In 1 fast forward
+		TPM0_C5V = 120;	
 	}
 	
 	// Set channel 0 PWM_Servo position
