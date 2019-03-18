@@ -23,10 +23,10 @@
 #include "detection.h"
 
 // Defines for Direction PD Servo Control Loop
-#define KP						15			// Proportional coefficient
-#define KDP						5			// Differential coefficient
+#define KP						25			// Proportional coefficient
+#define KDP						10			// Differential coefficient
 #define KP_CURVE				50
-#define KDP_CURVE				35
+#define KDP_CURVE				15
 #define KP_CROSS				10
 #define KDP_CROSS				5
 #define KI						0
@@ -266,15 +266,16 @@ void FTM1_IRQHandler()				// TPM1 ISR
 	else if(type_detection==STRAIGHT)
 	{
 		servo_position = KP*diff + KDP*(diff-diff_old);
-		TPM0_C1V = 120;					// TPM0 channel1 left Motor 1 In 1 fast forward
-		TPM0_C5V = 120;					// TPM0 channel5 right Motor 2 In 2 fast forward
+		TPM0_C1V = 100;					// TPM0 channel1 left Motor 1 In 1 fast forward
+		TPM0_C5V = 100;					// TPM0 channel5 right Motor 2 In 2 fast forward
 	}
 	else if (type_detection == CROSS)
 	{
 		servo_position = KP_CROSS*diff + KDP_CROSS*(diff-diff_old);
-		TPM0_C1V = 120;					// TPM0 channel1 left Motor 1 In 1 fast forward
-		TPM0_C5V = 120;	
+		TPM0_C1V = 100;					// TPM0 channel1 left Motor 1 In 1 fast forward
+		TPM0_C5V = 100;	
 	}
+	
 	
 	// Set channel 0 PWM_Servo position
 	TPM1_C0V  = servo_base - servo_position; 		// set channel 0 PWM_Servo

@@ -12,7 +12,7 @@
 #define CURVE						1
 #define CROSS						0
 #define UNDEFINE_CASE				6
-#define	ENDLINE						4
+#define	ENDLINE						3
 #define MAX_DETECTION				30
 #define MIN_DETECTION				0
 #define	DETECTION_TRIGGER			25
