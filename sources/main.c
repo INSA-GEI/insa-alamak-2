@@ -61,7 +61,7 @@ int RoadMiddle = 0;					// used in "camera.c"					// calculated middle of the ro
 int RoadMiddle_old = 0;				// used in "movement.c"					// save the last "Middle of the road" position
 
 
-int servo_base = 7100;														// initial servo position (center)
+int servo_base = 13200;														// initial servo position (center)
 unsigned long count_time = 0;												// counter to regulate the display of data 
 
 int BlackLineRight = 127;			// used in "camera.c"					// position of the black line on the right side
@@ -266,8 +266,8 @@ void FTM1_IRQHandler()				// TPM1 ISR
 	else if(type_detection==STRAIGHT)
 	{
 		servo_position = KP*diff + KDP*(diff-diff_old);
-		TPM0_C1V = 100;					// TPM0 channel1 left Motor 1 In 1 fast forward
-		TPM0_C5V = 100;					// TPM0 channel5 right Motor 2 In 2 fast forward
+		TPM0_C1V = 140;					// TPM0 channel1 left Motor 1 In 1 fast forward
+		TPM0_C5V = 140;					// TPM0 channel5 right Motor 2 In 2 fast forward
 	}
 	else if (type_detection == CROSS)
 	{

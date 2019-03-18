@@ -15,7 +15,7 @@
 #define	ENDLINE						3
 #define MAX_DETECTION				30
 #define MIN_DETECTION				0
-#define	DETECTION_TRIGGER			25
+#define	DETECTION_TRIGGER			24
 
 void update_corrector_type(int *number_detection);
 

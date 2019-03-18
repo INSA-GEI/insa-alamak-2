@@ -16,10 +16,28 @@ int nbr_detection_endline=MIN_DETECTION;
 int nbr_detection_undefine=MIN_DETECTION;
 int nbr_detection_cross=MIN_DETECTION;
 int type_detection=STRAIGHT;
+int compteur_endline=0;
+int	nbr_detection_endline_old=0;
 
 void update_corrector_type(int *number_detection)
 {
 	
+	if (nbr_detection_endline > 0)
+	{
+		if (nbr_detection_endline > nbr_detection_endline_old + 1)
+		{
+			compteur_endline = 0;
+			nbr_detection_endline_old=nbr_detection_endline;
+		}
+		else {
+			compteur_endline++;
+			if (compteur_endline>=20)
+			{
+				nbr_detection_endline=0;
+				compteur_endline=0;
+			}
+		}
+	}
 	if (*number_detection == CROSS)
 	{
 		if (nbr_detection_cross<MAX_DETECTION)
@@ -34,10 +52,10 @@ void update_corrector_type(int *number_detection)
 		{
 			nbr_detection_straight-=1;
 		}
-		if (nbr_detection_endline>MIN_DETECTION)
+		/*if (nbr_detection_endline>MIN_DETECTION)
 		{
 			nbr_detection_endline-=1;
-		}
+		}*/
 	}
 	else if (*number_detection==STRAIGHT)
 	{
@@ -49,10 +67,10 @@ void update_corrector_type(int *number_detection)
 		{
 			nbr_detection_curve-=1;
 		}
-		if (nbr_detection_endline>MIN_DETECTION)
+		/*if (nbr_detection_endline>MIN_DETECTION)
 		{
 			nbr_detection_endline-=1;
-		}
+		}*/
 		if (nbr_detection_cross>MIN_DETECTION)
 		{
 			nbr_detection_cross-=1;
@@ -69,10 +87,10 @@ void update_corrector_type(int *number_detection)
 		{
 			nbr_detection_straight-=1;
 		}
-		if (nbr_detection_endline>MIN_DETECTION)
+		/*if (nbr_detection_endline>MIN_DETECTION)
 		{
 			nbr_detection_endline-=1;
-		}
+		}*/
 		if (nbr_detection_cross>MIN_DETECTION)
 		{
 			nbr_detection_cross-=1;
@@ -101,8 +119,14 @@ void update_corrector_type(int *number_detection)
 	
 	
 	
-	
-	if (nbr_detection_straight>DETECTION_TRIGGER || (nbr_detection_straight>(DETECTION_TRIGGER/4) && type_detection==CURVE))
+	if (nbr_detection_endline>1)// && type_detection == STRAIGHT) || (nbr_detection_cross>DETECTION_TRIGGER && type_detection==CURVE))
+		{
+			type_detection=ENDLINE;
+			GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
+			GPIOD_PDOR |= GPIO_PDOR_PDO(1<<1);    // blue LED off	
+			GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<18);	// red led on
+		}
+	else if (nbr_detection_straight>DETECTION_TRIGGER || (nbr_detection_straight>(DETECTION_TRIGGER/4) && type_detection==CURVE))
 	{
 		if (type_detection == CURVE)
 		{
@@ -119,13 +143,6 @@ void update_corrector_type(int *number_detection)
 		GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
 		GPIOD_PDOR &= ~GPIO_PDOR_PDO(1<<1);    // blue LED on	
 		GPIOB_PDOR |= GPIO_PDOR_PDO(1<<18);	// red led off
-	}
-	else if (nbr_detection_endline>(DETECTION_TRIGGER/2) || (nbr_detection_cross>DETECTION_TRIGGER && type_detection==CURVE))
-	{
-		type_detection=ENDLINE;
-		GPIOB_PDOR |= GPIO_PDOR_PDO(1<<19);   // green LED off
-		GPIOD_PDOR |= GPIO_PDOR_PDO(1<<1);    // blue LED off	
-		GPIOB_PDOR &= ~GPIO_PDOR_PDO(1<<18);	// red led on
 	}
 	else if (nbr_detection_cross > DETECTION_TRIGGER && type_detection == STRAIGHT )//|| (nbr_detection_cross > DETECTION_TRIGGER/2 && type_detection == CURVE))
 	{
